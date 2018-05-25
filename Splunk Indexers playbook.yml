@@ -1,0 +1,100 @@
+- name: Checking for splunkForwarder path
+  stat: path=/opt/splunkforwarder
+  register: forwarder_path
+  
+
+- name: Checking splunkForwarder exists
+  debug: msg="splunkforwarder is already installed"
+  when: forwarder_path.stat.exists == true
+
+
+- name: Stopping splunForwarder
+  command: /opt/splunkforwarder/bin/splunk stop
+  when: forwarder_path.stat.exists == true
+
+
+- name: Removing splunkForwarder directory
+  file: path=/opt/splunkforwarder state=absent
+
+
+- name: Unistalling splunkforwarder 
+  zypper:
+    name: splunkforwarder=6.5.0
+    state: absent
+  become_user: root
+  become: true
+
+
+- name: Checking for splunk path
+  stat: path=/opt/splunk
+  register: splunk_path
+
+
+- name: Checking splunk exists
+  debug: msg="splunk is already installed"
+  when: splunk_path.stat.exists == true
+
+
+- name: installing splunk version 
+  zypper:
+     name: splunk=6.5.0
+     state: present
+  when: splunk_path.stat.exists == false
+  become_user: root
+  become: true
+
+
+- name: Creating deploymentclient directory
+  file: path=/opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/{{ item }} state=directory
+  with_items:
+    - local
+    - metadata
+
+
+
+- name: Creating deploymentclient.conf 
+  template:
+     src:  deploymentclient_local_deploymentclientconf.j2
+     dest: /opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/local/deploymentclient.conf
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/metadata
+
+
+
+- name: registering deploymentclinet path
+  stat: path=/opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/local/deploymentclient.conf
+  register: deployment_path
+
+
+
+####### checking whether /usr/local/splunk directory exists or not 
+
+- name: checking for /usr/local/splunk exists 
+  stat:
+    path: /usr/local/splunk
+  register: location 
+- debug:
+    msg: "Path exists and is a directory"
+  when: location.stat.isdir is defined and location.stat.isdir
+
+
+###### creates symlink only if  /usr/local/splunk directory exists
+
+- name: creating symlink for splunk & /usr/local/splunk
+  file:
+    src: /usr/local/splunk
+    dest: /splunk
+    state: link
+  when: location.stat.isdir is defined and location.stat.isdir
+
+
+- name: checking the deployment server connection
+  wait_for: host={{ deployment_ip }} port=8089 timeout=5
+  when: deployment_path.stat.exists == true
+  ignore_errors: yes
+- debug: msg="deployment server is up & running , connection successful"
+
+
+- name: Starting splunkd
+  command: /opt/splunk/bin/splunk start --accept-license

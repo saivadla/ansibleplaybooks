@@ -1,0 +1,56 @@
+- name: Fetching domain name
+  shell: dnsdomainname | cut -d "." -f 1
+  register: domain_name
+
+- set_fact:
+   dc_number: "{{item.value}}"
+  when: domain_name.stdout == item.key
+  with_dict: {dc1: 04, dc2: 03}
+
+
+- name: Checking for splunk forwarder path
+  stat: path=/opt/splunkforwarder
+  register: forwarder_path
+
+
+- name: Checking splunkforwarder exists
+  debug: msg="splunkforwarder is already installed"
+  when: forwarder_path.stat.exists == true
+
+- name: installing latest splunk forwarder
+  zypper:
+     name: splunkforwarder
+     state: latest
+  when: forwarder_path.stat.exists == false
+  become_user: root
+  become: true
+
+
+
+- name: Checking for deployment server path
+  stat: path=/opt/splunkforwarder/etc/apps/{{dc}}_deploymentclient/local/deploymentclient.conf
+  register: deployment_path
+
+
+- name:  Checking for deployment server exists
+  debug: msg="Splunk Deployment Server exits"
+  when: deployment_path.stat.exists == true
+
+- name: Creating deployment server directory
+  copy:
+    src: {{dc_number}}_deploymentclient
+    dest: /opt/splunkforwarder/etc/apps
+  when: deployment_path.stat.exists == false
+
+
+
+- name: checking the deployment server connection
+  wait_for: host={{ deploymentServer_ip}} port=8089 timeout=5
+  when: deployment_path.stat.exists == true
+
+- debug: msg="Successfully connected to deployment server"
+
+- name: Starting splunkd
+  become_user: root
+  become: true
+  shell: /opt/splunkforwarder/bin/splunk start --accept-license

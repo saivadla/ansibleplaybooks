@@ -1,0 +1,253 @@
+- name: Fetching domain name
+  shell: dnsdomainname | cut -d "." -f 1
+  register: domain_name
+
+- set_fact:
+   dc: "{{item.value}}"
+  when: domain_name.stdout == item.key
+  with_dict: {dc1: "1", dc2: "2"}
+
+
+- name: Checking for splunk path
+  stat: path=/opt/splunk
+  register: splunk_path
+
+
+- name: Checking splunk exists
+  debug: msg="splunk is already installed"
+  when: splunk_path.stat.exists == true
+
+- name: installing splunk 
+  zypper:
+     name: splunk=6.5.0
+     state: present
+  when: splunk_path.stat.exists == false
+  become_user: root
+  become: true
+
+- name: creating directories
+  file:
+    path: /opt/splunk/etc/apps/{{ item }}
+    state: directory
+  with_items:
+    - ['dc{{ dc }}_localds_outputs/default']
+    - ['dc{{ dc }}_localds_serverclass/default']
+    - ['dc{{ dc }}_localds_serverclass/local']
+    - ['dc{{ dc }}_license/local']
+
+- name: Creating serverClass config  file
+  template:
+     src: DSserverclass_default.j2
+     dest: /opt/splunk/etc/apps/dc{{ dc }}_localds_serverclass/default/serverclass.conf
+
+- template:
+     src: DSserverclass_local.j2
+     dest: /opt/splunk/etc/apps/dc{{ dc }}_localds_serverclass/local/serverclass.conf
+
+- name: Creating outputs config  file
+  template:
+     src: Deploymentoutputsconf_default.j2
+     dest: /opt/splunk/etc/apps/dc{{ dc }}_localds_outputs/default/outputs.conf
+
+- name: Creating license config file
+  copy:
+    src: server.conf
+    dest: /opt/splunk/etc/apps/dc{{ dc }}_license/local
+
+- name: Creating deployment Apps
+  shell: mkdir -p `echo /opt/splunk/etc/deployment-apps/{{item}}|sed 's/NUMBER/{{ dc }}/g'`
+  with_lines: cat  {{ role_path }}/files/DSskeleton.txt
+
+- name: Installing splunk in-built apps
+  unarchive:
+     src: "{{item}}"
+     dest: /opt/splunk/etc/deployment-apps
+  with_items:
+     - SA-ldapsearch.tar.gz
+     - SA-nix.tar.gz
+     - Splunk_TA_nix.tar.gz
+     - Splunk_TA_windows.tar.gz
+     - Splunk_for_ActiveDirectory.tar.gz
+     - TA-DomainController-NT6.tar.gz
+     
+- name: Creating indexes,props,transforms for custom1
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom1/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom1_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom1_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom1_default_transformsconf.j2, config: transforms.conf }
+
+
+- name: Creating indexes,props for custom2
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom2/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom2_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom2_default_propsconf.j2,  config: props.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom2/metadata
+
+
+- name: Creating indexes,props,transforms for custom3
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom3/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom3_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom3_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom3_default_transformsconf.j2, config: transforms.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom3/metadata
+
+
+- name: Creating indexes,props,transforms for custom4
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom4/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom4_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom4_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom4_default_transformsconf.j2, config: transforms.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom4/metadata
+
+
+- name: Creating indexes,props,transforms for custom5
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom5/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom5_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom5_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom5_default_transformsconf.j2, config: transforms.conf }
+
+
+- name: Creating indexes,props,transforms for custom6
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom6/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom6_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom6_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom6_default_transformsconf.j2, config: transforms.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom6/metadata
+
+
+- name: Creating indexes,props,transforms for custom7
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom7/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom7_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom7_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom7_default_transformsconf.j2, config: transforms.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom7/metadata
+
+- name: Creating indexes,props,transforms for custom8
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom8/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom8_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom8_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom8_default_transformsconf.j2, config: transforms.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom8/metadata
+
+
+- name: Creating indexes,props,transforms for custom9
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom9/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom9_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom9_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom9_default_transformsconf.j2, config: transforms.conf }
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom9/metadata
+
+
+- name: Creating indexes,props for custom10
+  template:
+     src: indexers_custom10_default_indexesconf.j2
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom10/default/indexes.conf
+
+- template:
+     src: indexers_custom10_local_propsconf.j2
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom10/local/props.conf
+
+
+- name: Creating indexes,props,transforms for custom11
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom11/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom11_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom11_default_propsconf.j2,  config: props.conf }
+    - { templatename: indexers_custom11_default_transformsconf.j2, config: transforms.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom11/metadata
+
+
+- name: Creating indexes,props for custom12
+  template:
+     src: "{{ item.templatename }}"
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom12/default/{{ item.config }}
+  loop:
+    - { templatename: indexers_custom12_default_indexesconf.j2, config: indexes.conf }
+    - { templatename: indexers_custom12_default_propsconf.j2,  config: props.conf }
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom12/metadata
+
+- name: Creating indexes for custom13
+  template:
+     src: indexers_custom13_default_indexesconf.j2
+     dest: /opt/splunk/etc/deployment-appsdc{{ dc }}_indexers_custom13/default/indexes.conf
+
+- copy:
+    src: local.meta
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_indexers_custom13/metadata
+
+
+- name: Creating inputs.conf for HeavyForwarder1 app
+  template:
+     src:  heavyforwardercustom3_local_inputsconf.j2
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_HeavyForwarder1_inputs/local/inputs.conf
+
+- name: Creating inputs.conf for HeavyForwarder2 app
+  template:
+     src:  heavyforwarder_inputsconf.j2
+     dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_HeavyForwarder2_inputs/local/inputs.conf
+
+- name: copying server.conf to deployment-apps/license app
+  copy:
+    src: server.conf
+    dest: /opt/splunk/etc/deployment-apps/dc{{ dc }}_license/local
+
+- name: Starting splunkd
+  become_user: root
+  become: true
+  shell: /opt/splunk/bin/splunk start --accept-license
+
