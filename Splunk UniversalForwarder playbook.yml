@@ -3,7 +3,7 @@
   register: domain_name
 
 - set_fact:
-   dc_number: "{{item.value}}"
+   dc: "{{item.value}}"
   when: domain_name.stdout == item.key
   with_dict: {dc1: 04, dc2: 03}
 
@@ -38,7 +38,7 @@
 
 - name: Creating deployment server directory
   copy:
-    src: {{dc_number}}_deploymentclient
+    src: {{dc}}_deploymentclient
     dest: /opt/splunkforwarder/etc/apps
   when: deployment_path.stat.exists == false
 
