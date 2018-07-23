@@ -45,7 +45,7 @@
 
 
 - name: Creating deploymentclient directory
-  file: path=/opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/{{ item }} state=directory
+  file: path=/opt/splunk/etc/apps/deploymentclient/{{ item }} state=directory
   with_items:
     - local
     - metadata
@@ -55,15 +55,15 @@
 - name: Creating deploymentclient.conf 
   template:
      src:  deploymentclient_local_deploymentclientconf.j2
-     dest: /opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/local/deploymentclient.conf
+     dest: /opt/splunk/etc/apps/deploymentclient/local/deploymentclient.conf
 - copy:
     src: local.meta
-    dest: /opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/metadata
+    dest: /opt/splunk/etc/apps/deploymentclient/metadata
 
 
 
 - name: registering deploymentclinet path
-  stat: path=/opt/splunk/etc/apps/dc{{ dc }}_deploymentclient/local/deploymentclient.conf
+  stat: path=/opt/splunk/etc/apps/deploymentclient/local/deploymentclient.conf
   register: deployment_path
 
 
@@ -90,7 +90,7 @@
 
 
 - name: checking the deployment server connection
-  wait_for: host={{ deployment_ip }} port=8089 timeout=5
+  wait_for: host={{ deployment_server_ip }} port=8089 timeout=5
   when: deployment_path.stat.exists == true
   ignore_errors: yes
 - debug: msg="deployment server is up & running , connection successful"
