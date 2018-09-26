@@ -1,13 +1,3 @@
-- name: Fetching domain name
-  shell: dnsdomainname | cut -d "." -f 1
-  register: domain_name
-
-- set_fact:
-   dc: "{{item.value}}"
-  when: domain_name.stdout == item.key
-  with_dict: {dc1: 04, dc2: 03}
-
-
 - name: Checking for splunk forwarder path
   stat: path=/opt/splunkforwarder
   register: forwarder_path
@@ -28,7 +18,7 @@
 
 
 - name: Checking for deployment server path
-  stat: path=/opt/splunkforwarder/etc/apps/{{dc}}_deploymentclient/local/deploymentclient.conf
+  stat: path=/opt/splunkforwarder/etc/apps/deploymentclient/local/deploymentclient.conf
   register: deployment_path
 
 
@@ -38,7 +28,7 @@
 
 - name: Creating deployment server directory
   copy:
-    src: {{dc}}_deploymentclient
+    src: deploymentclient
     dest: /opt/splunkforwarder/etc/apps
   when: deployment_path.stat.exists == false
 
